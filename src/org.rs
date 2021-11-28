@@ -1,22 +1,28 @@
+use log::{debug, trace};
 use orgize::Org;
 use walkdir::{DirEntry, WalkDir};
 
-fn is_valid_path(entry: &DirEntry) -> bool {
-    let file_name = entry.file_name().to_str();
+fn is_valid_path(entry: DirEntry) -> Option<DirEntry> {
+    trace!("Checking entry {:#?}", entry);
 
-    let is_hidden = file_name.map(|s| s.starts_with("."));
+    let file_name = entry.file_name().to_str();
     let is_valid_org = file_name.map(|s| s.ends_with(".org"));
 
-    is_valid_org
-        .zip(is_hidden)
-        .map(|(valid_org, hidden)| valid_org && !hidden)
-        .unwrap_or(false)
+    if is_valid_org == Some(true) {
+        Some(entry)
+    } else {
+        None
+    }
 }
 
-pub fn read_org_directory(path: &str) -> impl Iterator<Item = Result<DirEntry, walkdir::Error>> {
-    WalkDir::new(path)
-        .into_iter()
-        .filter_entry(|e| is_valid_path(e))
+pub fn read_org_directory(path: &str) -> impl Iterator<Item = DirEntry> {
+    debug!("Walking path: {}", path);
+
+    WalkDir::new(path).into_iter().filter_map(|entry| {
+        entry
+            .ok()
+            .and_then(|unwrapped_entry| is_valid_path(unwrapped_entry))
+    })
 }
 
 pub fn text_to_ast<'a>(org: &'a str) -> Org<'a> {

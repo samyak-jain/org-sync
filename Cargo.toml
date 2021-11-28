@@ -16,3 +16,5 @@ fallible-streaming-iterator = "0.1.9"
 chrono = "0.4.19"
 clap = "3.0.0-beta.5"
 walkdir = "2.3.2"
+log = "0.4.14"
+fern = { version = "0.6.0", features = ["colored"] }

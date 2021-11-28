@@ -1,6 +1,7 @@
 use std::{error::Error, fs};
 
 use clap::Parser;
+use log::debug;
 use orgize::Org;
 use rusqlite::{
     params,
@@ -70,7 +71,10 @@ struct Opts {
     #[clap(short, long, default_value = ".")]
     directory: String,
 
-    #[clap(short, long, default_value = "./store.db")]
+    #[clap(long)]
+    debug: bool,
+
+    #[clap(long, default_value = "./store.db")]
     database: String,
 
     #[clap(subcommand)]
@@ -80,29 +84,59 @@ struct Opts {
 #[derive(Parser)]
 enum Commands {
     ParseOrg,
-    ParseiCal,
+    ParseIcal,
+}
+
+fn setup_logger(level: log::LevelFilter) -> Result<(), fern::InitError> {
+    let colors = fern::colors::ColoredLevelConfig::new();
+
+    fern::Dispatch::new()
+        .format(move |out, message, record| {
+            out.finish(format_args!(
+                "{}[{}][{}] {}",
+                chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
+                record.target(),
+                colors.color(record.level()),
+                message
+            ))
+        })
+        .level(level)
+        .chain(std::io::stdout())
+        .apply()?;
+    Ok(())
 }
 
 fn main() {
     let opts = Opts::parse();
+
+    setup_logger(if opts.debug {
+        log::LevelFilter::Trace
+    } else {
+        log::LevelFilter::Info
+    })
+    .expect("Unable to setup logger");
+
+    debug!("Test if logging is working");
 
     let mut connection =
         database::setup_database(&opts.database).expect("Could not setup database");
 
     match opts.commands {
         Commands::ParseOrg => {
-            let org_file_paths = org::read_org_directory(&opts.directory)
-                .collect::<Result<Vec<DirEntry>, walkdir::Error>>()
-                .expect("Could not read from directory");
+            let org_file_paths = org::read_org_directory(&opts.directory);
 
             for org_file_path in org_file_paths {
+                debug!("Org File Path: {}", org_file_path.path().to_string_lossy());
+
                 let file_name = org_file_path
-                    .file_name()
+                    .path()
                     .to_str()
-                    .expect("File name is not valid UTF-8");
+                    .expect("File path is not valid UTF-8");
 
                 let file_contents = fs::read_to_string(org_file_path.path())
                     .expect(&format!("Could not read file: {}", file_name));
+
+                debug!("Org File Contents: \n{}", file_contents);
 
                 let org_ast = org::text_to_ast(&file_contents);
 
@@ -113,6 +147,6 @@ fn main() {
                     .expect("Could not update database");
             }
         }
-        Commands::ParseiCal => todo!(),
+        Commands::ParseIcal => todo!(),
     }
 }
