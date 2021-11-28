@@ -1,0 +1,59 @@
+* TODO This is a todo item
+
+** TODO This is a todo item
+  todo info
+
+* DONE This item is done
+
+* DONE This item is done
+  todo info
+
+* TODO [#A] This is a priority todo
+
+* TODO [#a] This is not(??) a priority todo
+
+* DONE [#A] This is a priority todo
+
+* DONE [#a] This is not(??) a priority todo
+
+#+TODO: NEWTODO
+Requires reload to be recognized when editing a file
+* NEWTODO My heading
+
+#+TODO: NEWTODO
+* NEWTODO My heading
+* TODO is no longer a todo
+
+* TODO is no longer a todo
+#+TODO: NEWTODO
+* NEWTODO My heading
+
+#+TODO: NEWTODO1 NEWTODO2 NEWTODO3
+Is this the same as #+SEQ_TODO?
+* NEWTODO1 My heading
+* NEWTODO2 My heading
+* NEWTODO3 My heading
+
+#+TYP_TODO: NEWTODO1 NEWTODO2 NEWTODO3
+* NEWTODO1 My heading
+* NEWTODO2 My heading
+* NEWTODO3 My heading
+
+#+SEQ_TODO: NEWTODO1 NEWTODO2 NEWTODO3
+* NEWTODO1 My heading
+* NEWTODO2 My heading
+* NEWTODO3 My heading
+
+#+TODO: NEWTODO1
+#+TYP_TODO: NEWTODO2 NEWTODO3
+Can we mix and match?
+* NEWTODO1 My heading
+* NEWTODO2 My heading
+* NEWTODO3 My heading
+
+#+SEQ_TODO: NEWTODO2 NEWTODO3
+#+TODO: NEWTODO1
+Can we mix and match?
+* NEWTODO1 My heading
+* NEWTODO2 My heading
+* NEWTODO3 My heading
