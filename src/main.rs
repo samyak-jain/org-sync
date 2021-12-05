@@ -1,7 +1,7 @@
 use std::{error::Error, fs};
 
 use clap::Parser;
-use log::debug;
+use log::{debug, trace};
 use orgize::Org;
 use rusqlite::{
     params,
@@ -9,20 +9,20 @@ use rusqlite::{
     Connection, ToSql,
 };
 use stable_eyre::eyre::Report;
-use walkdir::DirEntry;
 
 mod database;
 mod org;
+mod tasks;
 
-fn convert_to_org(org_json: String) -> Result<String, Report> {
-    let new_org: Org = serde_json::from_str(&org_json).unwrap();
-
-    let mut res_vec = Vec::new();
-    new_org.write_org(&mut res_vec)?;
-
-    let new_org_str = String::from_utf8(res_vec)?;
-    Ok(new_org_str)
-}
+// fn convert_to_org(org_json: String) -> Result<String, Report> {
+//     let new_org: Org = serde_json::from_str(&org_json).unwrap();
+//
+//     let mut res_vec = Vec::new();
+//     new_org.write_org(&mut res_vec)?;
+//
+//     let new_org_str = String::from_utf8(res_vec)?;
+//     Ok(new_org_str)
+// }
 
 fn store() -> Result<(), Box<dyn Error>> {
     let conn = Connection::open("./store.db").unwrap();
@@ -71,14 +71,31 @@ struct Opts {
     #[clap(short, long, default_value = ".")]
     directory: String,
 
-    #[clap(long)]
-    debug: bool,
+    #[clap(long, arg_enum, default_value = "error")]
+    log: LogLevel,
 
     #[clap(long, default_value = "./store.db")]
     database: String,
 
     #[clap(subcommand)]
     commands: Commands,
+}
+
+#[derive(clap::ArgEnum, Clone)]
+enum LogLevel {
+    Debug,
+    Error,
+    Trace,
+}
+
+impl Into<log::LevelFilter> for LogLevel {
+    fn into(self) -> log::LevelFilter {
+        match self {
+            LogLevel::Debug => log::LevelFilter::Debug,
+            LogLevel::Error => log::LevelFilter::Error,
+            LogLevel::Trace => log::LevelFilter::Trace,
+        }
+    }
 }
 
 #[derive(Parser)]
@@ -107,14 +124,10 @@ fn setup_logger(level: log::LevelFilter) -> Result<(), fern::InitError> {
 }
 
 fn main() {
+    stable_eyre::install().unwrap();
     let opts = Opts::parse();
 
-    setup_logger(if opts.debug {
-        log::LevelFilter::Trace
-    } else {
-        log::LevelFilter::Info
-    })
-    .expect("Unable to setup logger");
+    setup_logger(opts.log.into()).expect("Unable to setup logger");
 
     debug!("Test if logging is working");
 
@@ -140,11 +153,15 @@ fn main() {
 
                 let org_ast = org::text_to_ast(&file_contents);
 
-                database::first_time_database_entry(&org_ast, &connection, file_name)
-                    .expect("Could not handle first time entry into the database");
+                // trace!("Org arena: {:#?}", org_ast.arena());
 
-                database::update_database(&org_ast, &mut connection, file_name)
-                    .expect("Could not update database");
+                tasks::org_to_task(&org_ast);
+
+                // database::first_time_database_entry(&org_ast, &connection, file_name)
+                //     .expect("Could not handle first time entry into the database");
+
+                // database::update_database(&org_ast, &mut connection, file_name)
+                //     .expect("Could not update database");
             }
         }
         Commands::ParseIcal => todo!(),

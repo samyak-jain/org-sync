@@ -29,3 +29,14 @@ On ical win conflict:
 1. Convert JSON back to AST
 2. Create ORG file from AST
 3. Generate ORG text and overwrite the respective file
+
+
+Read org file to indextree
+Convert indextree to custom struct
+convert custom struct to ics
+
+Read ics
+Convert ics into custom struct
+Read org file into indextree
+diff the tasks that need to change and maniuplate using arena mut
+save to org file
